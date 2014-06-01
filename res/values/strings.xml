@@ -2,7 +2,19 @@
 <resources>
 
     <string name="app_name">VPS</string>
-    <string name="dummy_button">Dummy Button</string>
-    <string name="dummy_content">DUMMY\nCONTENT</string>
 
+    <string-array name="locations">
+        <item>A</item>
+        <item>B</item>
+        <item>C</item>
+        <item>D</item>
+        <item>E</item>
+    </string-array>
+    
+    <string name="main_location_text">位置\nLocation</string>
+    <string name="main_help_text">求助\nGet Help</string>
+    
+    <string name="location_string">Your Location: %1$s\nYour Destination: %2$s</string>
+    <string name="input_location_prompt">Input your destination</string>
+    <string name="btnGo_text">Go</string>
 </resources>
