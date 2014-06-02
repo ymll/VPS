@@ -16,6 +16,7 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	private BluetoothAdapter bluetoothAdapter;
 	private boolean isBluetoothPreviouslyDisabled;
 	private SensorBroadcastReceiver sensorBroadcastReceiver;
+	private BluetoothDevice sensorDevice;
 
 	private String sensorAddress;
 	private String sensor_pin;
@@ -69,6 +70,22 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 			if(sensorBroadcastReceiver != null)
 				this.unregisterReceiver(sensorBroadcastReceiver);
 			
+			if(sensorDevice != null){
+				if(sensorDevice.getBondState() == BluetoothDevice.BOND_BONDED){
+					try {
+						sensorDevice.getClass().getMethod("removeBond").invoke(sensorDevice);
+					} catch (NoSuchMethodException e) {
+						e.printStackTrace();
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (IllegalAccessException e) {
+						e.printStackTrace();
+					} catch (InvocationTargetException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			
 			// Close Bluetooth if it is disabled before
 			if(isBluetoothPreviouslyDisabled){
 				bluetoothAdapter.disable();
@@ -121,20 +138,20 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	}
 
 	@Override
-	public void onSensorDiscovered(BluetoothDevice device) {
+	public void onSensorDiscovered() {
 		System.out.println("onSensorDiscovered");
 		bluetoothAdapter.cancelDiscovery();
-		pairSensor(device);
+		pairSensor();
 	}
 
 	@Override
-	public void pairSensor(BluetoothDevice device) {
+	public void pairSensor() {
 		System.out.println("pairSensor");
 		
 		//System.out.println(Arrays.toString(device.getClass().getMethods()));
-		if(device.getBondState() == BluetoothDevice.BOND_NONE){
+		if(sensorDevice.getBondState() == BluetoothDevice.BOND_NONE){
 			try {
-				device.getClass().getMethod("createBond", (Class[]) null).invoke(device, (Object[]) null);
+				sensorDevice.getClass().getMethod("createBond").invoke(sensorDevice);
 			} catch (NoSuchMethodException e) {
 				e.printStackTrace();
 			} catch (IllegalArgumentException e) {
@@ -144,7 +161,7 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 			} catch (InvocationTargetException e) {
 				e.printStackTrace();
 			}
-		}else if(device.getBondState() == BluetoothDevice.BOND_BONDED){
+		}else if(sensorDevice.getBondState() == BluetoothDevice.BOND_BONDED){
 			onSensorPaired();
 		}
 	}
@@ -200,7 +217,8 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 				System.out.println(String.format("%s - %s - %s - %s", device.getName(), device.getAddress(), device.getBondState(), device.getBluetoothClass()));
 				System.out.println(String.format("%s <-> %s", sensorAddress, device.getAddress()));
 				if(sensorAddress.equalsIgnoreCase(device.getAddress())){
-					onSensorDiscovered(device);
+					RfidSensorActivity.this.sensorDevice = device;
+					onSensorDiscovered();
 				}
 			}
 			
