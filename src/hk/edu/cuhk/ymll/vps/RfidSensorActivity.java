@@ -70,26 +70,8 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 			if(sensorBroadcastReceiver != null)
 				this.unregisterReceiver(sensorBroadcastReceiver);
 			
-			if(sensorDevice != null){
-				if(sensorDevice.getBondState() == BluetoothDevice.BOND_BONDED){
-					try {
-						sensorDevice.getClass().getMethod("removeBond").invoke(sensorDevice);
-					} catch (NoSuchMethodException e) {
-						e.printStackTrace();
-					} catch (IllegalArgumentException e) {
-						e.printStackTrace();
-					} catch (IllegalAccessException e) {
-						e.printStackTrace();
-					} catch (InvocationTargetException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-			
-			// Close Bluetooth if it is disabled before
-			if(isBluetoothPreviouslyDisabled){
-				bluetoothAdapter.disable();
-			}
+			unpairSensor();
+			disableBluetooth();
 		}
 	}
 	
@@ -184,14 +166,29 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 
 	@Override
 	public void unpairSensor() {
-		// TODO Auto-generated method stub
-		
+		if(sensorDevice != null){
+			if(sensorDevice.getBondState() == BluetoothDevice.BOND_BONDED){
+				try {
+					sensorDevice.getClass().getMethod("removeBond").invoke(sensorDevice);
+				} catch (NoSuchMethodException e) {
+					e.printStackTrace();
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (IllegalAccessException e) {
+					e.printStackTrace();
+				} catch (InvocationTargetException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
 	@Override
 	public void disableBluetooth() {
-		// TODO Auto-generated method stub
-		
+		// Close Bluetooth if it is disabled before
+		if(isBluetoothPreviouslyDisabled){
+			bluetoothAdapter.disable();
+		}		
 	}
 	
 	private class SensorBroadcastReceiver extends BroadcastReceiver{
