@@ -24,5 +24,9 @@ public class MainActivity extends Activity {
 				MainActivity.this.startActivity(intent);
 			}
 		});
+		
+		Intent bluetoothIntent = new Intent();
+		bluetoothIntent.setClass(this, RfidSensorActivity.class);
+		this.startActivity(bluetoothIntent);
 	}
 }
