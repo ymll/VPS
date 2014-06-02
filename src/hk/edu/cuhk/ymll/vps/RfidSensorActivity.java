@@ -92,7 +92,7 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 			this.startActivityForResult(enableBluetoothIntent, REQUEST_BLUETOOTH_ENABLE);
 		}else{
 			// Turn on Bluetooth without prompt
-			onBluetoothEnabled(bluetoothAdapter.enable());	
+			bluetoothAdapter.enable();	
 		}
 	}
 
@@ -169,7 +169,9 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 			}
 			
 			if(BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)){
-				System.out.println(intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -4));
+				int btState = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);				
+				if(btState == BluetoothAdapter.STATE_ON)
+					onBluetoothEnabled(true);
 			}
 			
 			if(BluetoothDevice.ACTION_FOUND.equals(action)){
