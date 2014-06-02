@@ -13,6 +13,7 @@
     
     <!-- Hardcoded for our own sensor -->
     <string name="sensor_address">98:D3:31:B2:C9:8B</string>
+    <string name="sensor_pin">0000</string>
     
     <string name="main_location_text">位置\nLocation</string>
     <string name="main_help_text">求助\nGet Help</string>
