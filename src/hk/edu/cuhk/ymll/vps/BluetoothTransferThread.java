@@ -17,6 +17,7 @@ public class BluetoothTransferThread extends Thread {
 	private InputStream sensorInputStream;
 	private OutputStream sensorOutputStream;
 	private byte[] buf;
+	private int numOfByte;
 	
 	private static int BUFFER_SIZE = 4096;
 	private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
@@ -43,17 +44,26 @@ public class BluetoothTransferThread extends Thread {
 
 	private void recv() throws IOException, InterruptedException{
 		if(sensorInputStream.available() > 0){
-			final int numOfByte = sensorInputStream.read(buf);
-			final String hexString = bytesToHex(buf, numOfByte);
-			indicate.post(new Runnable(){
-				@Override
-				public void run() {
-					System.out.println("Recv: "+hexString);
-				}		
-			});
+			int readLen = sensorInputStream.read(buf, numOfByte, buf.length-numOfByte);
+			
+			if(readLen > 0){
+				numOfByte += readLen;
+				final String hexString = bytesToHex(buf, numOfByte);
+				System.out.println("Read ("+readLen+"/"+numOfByte+") - "+(rfidCommand.isCompleteCommand(buf, numOfByte)?"Complete":"InCompleted")+": "+hexString);
+			}
+			
+			if(rfidCommand.isCompleteCommand(buf, numOfByte)){
+				final String hexString = bytesToHex(buf, numOfByte);
+				indicate.post(new Runnable(){
+					@Override
+					public void run() {
+						System.out.println("Recv: "+hexString);
+					}		
+				});
+				numOfByte = 0;
+			}
 		}else{
 			Thread.sleep(100);
-			System.out.println("Sleep 0.1s");
 		}
 	}
 	

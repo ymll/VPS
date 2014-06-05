@@ -4,16 +4,20 @@ import java.nio.ByteBuffer;
 
 
 public class RfidCommand {
-    
-    public byte[] getBCC(String hexString){
-    	byte[] a = new byte[2];
-    	char[] data = hexString.toCharArray();
-    	
-    	for(int i=0; i<data.length; i++)
-    		a[i%2] ^= Byte.parseByte(data[i]+"", 16);
-    	
-    	return a;
-    }
+	
+	public boolean isCompleteCommand(byte[] command, int commandLen){
+		if(commandLen < 6)
+			return false;
+		
+		if(command[0]!=2 || command[commandLen-1]!=3)
+			return false;
+		
+		int dataLen = command[2];
+		if(commandLen != (dataLen+5))
+			return false;
+		
+		return true; 
+	}
     
     private byte[] commandToByteArray(String command){
     	char[] commandCharArray = command.toCharArray();

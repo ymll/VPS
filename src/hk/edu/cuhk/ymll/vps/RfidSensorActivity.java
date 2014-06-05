@@ -3,7 +3,6 @@ package hk.edu.cuhk.ymll.vps;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.UUID;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -27,7 +26,6 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	private String sensorAddress;
 	private String sensor_pin;
 	private static final int REQUEST_BLUETOOTH_ENABLE = 43839;
-	private static final UUID MANAGER_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState){
@@ -87,7 +85,7 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 		if(bluetoothAdapter != null){
 			bluetoothAdapter.cancelDiscovery();
 			
-			unpairSensor();
+			//unpairSensor();
 			disableBluetooth();
 		}
 	}
@@ -137,7 +135,7 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 		
 		for(BluetoothDevice device : bluetoothAdapter.getBondedDevices()){
 			if(device.getAddress().equalsIgnoreCase(sensorAddress)){
-				sensorDevice = device;
+				sensorDevice = bluetoothAdapter.getRemoteDevice(device.getAddress());
 				connectSensor();
 				return;
 			}
@@ -157,8 +155,7 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	public void pairSensor() {
 		System.out.println("pairSensor");
 		
-		//System.out.println(Arrays.toString(device.getClass().getMethods()));
-		if(sensorDevice.getBondState() == BluetoothDevice.BOND_NONE){
+		if(sensorDevice.getBondState() != BluetoothDevice.BOND_BONDED){
 			try {
 				sensorDevice.getClass().getMethod("createBond").invoke(sensorDevice);
 			} catch (NoSuchMethodException e) {
@@ -191,7 +188,9 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 		try {
 			Method m = sensorDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
 			sensorSocket = (BluetoothSocket) m.invoke(sensorDevice, 1);
+			bluetoothAdapter.cancelDiscovery();
 			sensorSocket.connect();
+			System.out.println("connectSensor: Connected");
 			onSensorConnected();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -267,8 +266,9 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 			}
 			
 			else if(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED.equals(action)){
-				int scandMode = intent.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, -4);
-				System.out.println(scandMode);
+				int scanMode = intent.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, BluetoothAdapter.ERROR);
+				int previousMode = intent.getIntExtra(BluetoothAdapter.EXTRA_PREVIOUS_SCAN_MODE, BluetoothAdapter.ERROR);
+				System.out.printf("%s -> %s\n", previousMode, scanMode);
 			}
 			
 			else if(BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)){
