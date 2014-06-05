@@ -4,11 +4,19 @@
     <string name="app_name">VPS</string>
 
     <string-array name="locations">
-        <item>A</item>
-        <item>B</item>
-        <item>C</item>
-        <item>D</item>
-        <item>E</item>
+        <item>Left</item>
+        <item>Up</item>
+        <item>Center</item>
+        <item>Down</item>
+        <item>Right</item>
+    </string-array>
+    
+    <string-array name="location_tags">        
+        <item>F3E301AB</item>
+        <item>23110EAB</item>
+        <item>33510DAB</item>
+        <item>83F60CAB</item>
+        <item>53C00EAB</item>
     </string-array>
     
     <!-- Hardcoded for our own sensor -->
