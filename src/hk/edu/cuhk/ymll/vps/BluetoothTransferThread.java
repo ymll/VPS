@@ -45,8 +45,9 @@ public class BluetoothTransferThread extends Thread {
 			indicate.post(new Runnable(){
 				@Override
 				public void run() {
-					System.out.printf("Status: %02X, Data: %s\n", response.getStatus(), response.getDataHexString());
-				}		
+					if(response.getStatus()==0)
+						System.out.printf("Status: %02X, ID: %s, Data: %s\n", response.getStatus(), response.getDataHexString().substring(0, 8), response.getDataHexString().substring(8));
+				}
 			});
 			System.arraycopy(buf, completeCommandLength, buf, 0, numOfByte-completeCommandLength);
 			numOfByte -= completeCommandLength;
