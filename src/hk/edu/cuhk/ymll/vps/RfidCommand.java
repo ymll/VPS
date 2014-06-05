@@ -1,22 +1,35 @@
 package hk.edu.cuhk.ymll.vps;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 
 public class RfidCommand {
 	
-	public boolean isCompleteCommand(byte[] command, int commandLen){
+	private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
+
+	public int getCompleteCommandLength(byte[] command, int commandLen){
 		if(commandLen < 6)
-			return false;
-		
-		if(command[0]!=2 || command[commandLen-1]!=3)
-			return false;
+			return -1;
 		
 		int dataLen = command[2];
-		if(commandLen != (dataLen+5))
-			return false;
+		if(commandLen < (dataLen+5))
+			return -1;
 		
-		return true; 
+		if(command[0]!=2 || command[dataLen+4]!=3)
+			return -1;
+		
+		return dataLen+5; 
+	}
+	
+	public static String bytesToHex(byte[] bytes, int start, int length) {
+	    char[] hexChars = new char[length * 2];
+	    for ( int j = 0; j < length; j++ ) {
+	        int v = bytes[j+start] & 0xFF;
+	        hexChars[j * 2] = hexArray[v >>> 4];
+	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+	    }
+	    return new String(hexChars);
 	}
     
     private byte[] commandToByteArray(String command){
@@ -56,5 +69,33 @@ public class RfidCommand {
 		String command = String.format("000389%2X%2X", period, loopCount);
 		
 		return commandToByteArray(command);
+	}
+	
+	public static class Response{
+		int status;
+		byte[] data;
+		String dataHexString;
+		
+		public Response(byte[] responseRawData, int length){
+			status = responseRawData[3] & 0xFF;
+			int dataLen = (responseRawData[2] & 0xFF) -1;
+			
+			assert(dataLen >= 0);
+			data = Arrays.copyOfRange(responseRawData, 4, 4+dataLen);
+		}
+
+		public int getStatus() {
+			return status;
+		}
+
+		public byte[] getData() {
+			return data;
+		}
+		
+		public String getDataHexString() {
+			if(dataHexString == null)
+				dataHexString = RfidCommand.bytesToHex(data, 0, data.length);
+			return dataHexString;
+		}
 	}
 }
