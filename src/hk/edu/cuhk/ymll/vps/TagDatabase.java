@@ -2,6 +2,7 @@ package hk.edu.cuhk.ymll.vps;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -17,7 +18,7 @@ public class TagDatabase {
 	public TagDatabase(String[] messages){
 		this.messages = messages;
 		
-		tagToLocation = new HashMap<String, Location>();
+		tagToLocation = Collections.synchronizedMap(new HashMap<String, Location>());
 		tagToLocation.put("F3C701AB", Location.Down);
 		tagToLocation.put("33510DAB", Location.Down);
 		tagToLocation.put("23110EAB", Location.Down);
@@ -48,7 +49,7 @@ public class TagDatabase {
 		
 		tagToLocation.put("44E13031", Location.Down);
 		
-		assert(tagToLocation.size() == 24);
+		assert(tagToLocation.size() == 25);
 	}
 	
 	public Location getLocationByTag(String tagId){
