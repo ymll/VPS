@@ -43,9 +43,11 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 	public static float[] mGeomagnetic = null;
 	private double azimuth;
 	
+	private RfidSensorActivity activity;
+	
 	private static int BUFFER_SIZE = 4096;
 
-	public BluetoothTransferThread(BluetoothSocket sensorSocket, String[] navigationString, Location destination, TextToSpeech tts, TextView txtMessage, TextView txtAngle) throws IOException {
+	public BluetoothTransferThread(BluetoothSocket sensorSocket, String[] navigationString, Location destination, TextToSpeech tts, TextView txtMessage, TextView txtAngle, RfidSensorActivity activity) throws IOException {
 		this.sensorInputStream = sensorSocket.getInputStream();
 		this.sensorOutputStream = sensorSocket.getOutputStream();
 		
@@ -54,12 +56,15 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 		this.tts = tts;
 		this.txtMessage = txtMessage;
 		this.txtAngle = txtAngle;
+		this.activity = activity;
 		tagDatabase = new TagDatabase(navigationString);
 		
 		rfidCommand = new RfidCommand();
 		sensorConnected = true;
 		indicate = new Handler();
-		buf = new byte[BUFFER_SIZE];		
+		buf = new byte[BUFFER_SIZE];	
+		
+
 	}
 
 	private void recv() throws IOException, InterruptedException{
@@ -282,6 +287,7 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 			
 			String message = String.format("Current: %s, Previous: %s, Des: %s, Next: %s, Angle: %.2f, Speak: %s\n", currentTag.toString(), previousTag.toString(), destination.toString(), nav.toString(), azimuth, speakText);
 			System.out.printf(message);
+			activity.setLastLocation(loc);
 			txtMessage.setText(message.replace(", ", "\n"));
 			tts.speak(speakText, TextToSpeech.QUEUE_FLUSH, null);
 		}

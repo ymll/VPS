@@ -33,4 +33,6 @@
     </string-array>
     <string name="input_location_prompt">Input your destination</string>
     <string name="btnGo_text">Go</string>
+    <string name="btnHelp_text">Help</string>
+    <string name="dialog_sms">請輸入電話號碼</string>
 </resources>

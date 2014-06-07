@@ -29,9 +29,10 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	private boolean isBluetoothPreviouslyDisabled;
 	private SensorBroadcastReceiver sensorBroadcastReceiver;
 	private BluetoothDevice sensorDevice;
-	private BluetoothSocket sensorSocket;	
+	private BluetoothSocket sensorSocket;
+	private Location lastLocation = Location.NONE;
 	private Location destination = Location.NONE;
-	
+		
 	private InputFormHandler inputFormHandler;
 	private BluetoothTransferThread bluetoothTransferThread;
 	private TextView txtMessage;
@@ -383,6 +384,14 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 		}
 	}
 	
+	public void setLastLocation(Location lastLocation){
+		this.lastLocation = lastLocation;
+	}
+	
+	public Location getLastLocation(){
+		return lastLocation;
+	}
+	
 	public void setDestination(Location destination){
 		if(this.destination != destination && sensorSocket != null){
 			this.destination = destination;
@@ -406,7 +415,7 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 		}
 		
 		try {
-			bluetoothTransferThread = new BluetoothTransferThread(sensorSocket, navigationString, destination, tts, txtMessage, txtAngle);
+			bluetoothTransferThread = new BluetoothTransferThread(sensorSocket, navigationString, destination, tts, txtMessage, txtAngle, this);
 			
 			HandlerThread mSensorThread = new HandlerThread("sensor_thread");
 			mSensorThread.start();
