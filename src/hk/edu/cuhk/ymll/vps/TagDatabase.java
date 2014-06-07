@@ -4,7 +4,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.Scanner;
 
 
@@ -57,14 +56,6 @@ public class TagDatabase {
 		if(location == null)
 			location = Location.NONE;
 		
-		if("44E13031".equals(tagId)){
-			Random r = new Random();
-			Location newLoc = null;
-			while(newLoc == tagToLocation.get("44E13031")){
-				newLoc = Location.values()[r.nextInt(4)];
-			}
-			tagToLocation.put("44E13031", Location.values()[r.nextInt(4)]);
-		}
 		return location;
 	}
 	

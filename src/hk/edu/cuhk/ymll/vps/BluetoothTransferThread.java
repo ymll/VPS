@@ -6,6 +6,7 @@ import hk.edu.cuhk.ymll.vps.TagDatabase.Navigation;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Random;
 
 import android.bluetooth.BluetoothSocket;
 import android.hardware.Sensor;
@@ -87,6 +88,15 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 							currentTag = loc;
 							Navigation nav = tagDatabase.getNextAction(previousTag, currentTag, destination);
 
+							if("44E13031".equals(tagId)){
+								Random r = new Random();
+								Location newLoc = null;
+								while(newLoc == tagDatabase.tagToLocation.get("44E13031")){
+									newLoc = Location.values()[r.nextInt(4)];
+								}
+								tagDatabase.tagToLocation.put("44E13031", Location.values()[r.nextInt(4)]);
+							}
+							
 							if(nav == Navigation.ERROR){
 								nav = Navigation.NEW;
 							}
