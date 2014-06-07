@@ -1,9 +1,11 @@
 package hk.edu.cuhk.ymll.vps;
 
+import hk.edu.cuhk.ymll.vps.TagDatabase.Location;
+import hk.edu.cuhk.ymll.vps.TagDatabase.Navigation;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -12,7 +14,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.speech.tts.TextToSpeech;
+import android.widget.TextView;
 
 public class RfidSensorActivity extends Activity implements IRfidSensor {
 
@@ -21,8 +28,17 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	private SensorBroadcastReceiver sensorBroadcastReceiver;
 	private BluetoothDevice sensorDevice;
 	private BluetoothSocket sensorSocket;	
+	
 	private BluetoothTransferThread bluetoothTransferThread;
-
+	private TextView txtMessage;
+	private TextView txtAngle;
+	private TextToSpeech tts;
+	
+	private SensorManager mSensorManager;
+	private Sensor accelerometer;
+	private Sensor magnetometer;
+	
+	private String[] navigationString;
 	private String sensorAddress;
 	private String sensor_pin;
 	private static final int REQUEST_BLUETOOTH_ENABLE = 43839;
@@ -38,21 +54,47 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 			return;
 		}
 		
-		sensorAddress = this.getResources().getString(R.string.sensor_address);
-		sensor_pin = this.getResources().getString(R.string.sensor_pin);
-	    sensorBroadcastReceiver = new SensorBroadcastReceiver();
-	    
-	    IntentFilter intentFilter = new IntentFilter();
-	    intentFilter.addAction(BluetoothDevice.ACTION_FOUND);
-	    intentFilter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
-	    intentFilter.addAction("android.bluetooth.device.action.PAIRING_REQUEST");
-	    intentFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
-	    intentFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-	    intentFilter.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
-	    intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-	    this.registerReceiver(sensorBroadcastReceiver, intentFilter);
+		super.setContentView(R.layout.activity_nav);
+		txtMessage = (TextView)super.findViewById(R.id.txtMessage);
+		txtAngle = (TextView)super.findViewById(R.id.txtAngle);
 		
-		setupSensor();
+		navigationString = this.getResources().getStringArray(R.array.navigation_string);
+		assert(navigationString.length == Navigation.values().length);
+		
+		tts = new TextToSpeech(this, new TextToSpeech.OnInitListener(){
+			@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+			@Override
+			public void onInit(int status) {
+				if(status == TextToSpeech.SUCCESS){
+					setupSensor();
+					txtMessage.setText(tts.getEngines().toString());
+				}
+			}
+		});
+		
+		mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+   		accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+   		magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+	}
+	
+	@Override
+	protected void onResume(){
+		super.onResume();
+		
+		if(bluetoothTransferThread != null){
+		    mSensorManager.registerListener(bluetoothTransferThread, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+		    mSensorManager.registerListener(bluetoothTransferThread, magnetometer, SensorManager.SENSOR_DELAY_GAME);			
+		}		
+	}
+	
+	@Override
+	protected void onPause() {
+	    super.onPause();
+	    
+		if(bluetoothTransferThread != null){
+		    mSensorManager.unregisterListener(bluetoothTransferThread, accelerometer);
+		    mSensorManager.unregisterListener(bluetoothTransferThread, magnetometer);			
+		}
 	}
 	
 	@Override
@@ -88,12 +130,30 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 			//unpairSensor();
 			disableBluetooth();
 		}
+		
+		if(tts != null)
+			tts.shutdown();
 	}
 	
 	
 	@Override
 	public void setupSensor() {
 		System.out.println("setupSensor");
+		
+		sensorAddress = this.getResources().getString(R.string.sensor_address);
+		sensor_pin = this.getResources().getString(R.string.sensor_pin);
+	    sensorBroadcastReceiver = new SensorBroadcastReceiver();
+	    
+	    IntentFilter intentFilter = new IntentFilter();
+	    intentFilter.addAction(BluetoothDevice.ACTION_FOUND);
+	    intentFilter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+	    intentFilter.addAction("android.bluetooth.device.action.PAIRING_REQUEST");
+	    intentFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+	    intentFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+	    intentFilter.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
+	    intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+	    this.registerReceiver(sensorBroadcastReceiver, intentFilter);
+		
 		if(!bluetoothAdapter.isEnabled()){
 			isBluetoothPreviouslyDisabled = true;
 			enableBluetooth(false);
@@ -119,6 +179,8 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	@Override
 	public void onBluetoothEnabled(boolean isSuccess) {
 		System.out.println("onBluetoothEnabled");
+		tts.speak("Bluetooth is enabled", TextToSpeech.QUEUE_FLUSH, null);
+		
 		if(isSuccess){
 			discoverSensor();
 		}
@@ -147,6 +209,8 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	@Override
 	public void onSensorDiscovered() {
 		System.out.println("onSensorDiscovered");
+		tts.speak("Sensor is found", TextToSpeech.QUEUE_ADD, null);
+		
 		pairSensor();
 	}
 
@@ -173,6 +237,8 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	@Override
 	public void onSensorPaired() {
 		System.out.println("onSensorPaired");
+		tts.speak("Sensor is paired", TextToSpeech.QUEUE_ADD, null);
+		
 		if(bluetoothAdapter.isDiscovering()){
 			bluetoothAdapter.cancelDiscovery();			
 		}else{
@@ -209,14 +275,23 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	public void onSensorConnected() {
 		System.out.println("onSensorConnected");
 		
+		tts.speak(this.getResources().getString(R.string.message_sensor_connected), TextToSpeech.QUEUE_ADD, null);
+		
 		if(bluetoothTransferThread != null && bluetoothTransferThread.isAlive()){
+		    mSensorManager.unregisterListener(bluetoothTransferThread, accelerometer);
+		    mSensorManager.unregisterListener(bluetoothTransferThread, magnetometer);			
+			
 			bluetoothTransferThread.setSensorConnected(false);
 			bluetoothTransferThread.interrupt();
 			bluetoothTransferThread = null;
 		}
 		
 		try {
-			bluetoothTransferThread = new BluetoothTransferThread(sensorSocket);
+			bluetoothTransferThread = new BluetoothTransferThread(sensorSocket, navigationString, Location.values()[this.getIntent().getIntExtra("destination", Location.NONE.ordinal())], tts, txtMessage, txtAngle);
+			
+		    mSensorManager.registerListener(bluetoothTransferThread, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+		    mSensorManager.registerListener(bluetoothTransferThread, magnetometer, SensorManager.SENSOR_DELAY_GAME);			
+			
 			bluetoothTransferThread.start();
 		} catch (IOException e) {
 			e.printStackTrace();

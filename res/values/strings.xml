@@ -5,18 +5,9 @@
 
     <string-array name="locations">
         <item>Left</item>
-        <item>Up</item>
-        <item>Center</item>
         <item>Down</item>
         <item>Right</item>
-    </string-array>
-    
-    <string-array name="location_tags">        
-        <item>F3E301AB</item>
-        <item>23110EAB</item>
-        <item>33510DAB</item>
-        <item>83F60CAB</item>
-        <item>53C00EAB</item>
+        <item>Center</item>
     </string-array>
     
     <!-- Hardcoded for our own sensor -->
@@ -26,7 +17,20 @@
     <string name="main_location_text">位置\nLocation</string>
     <string name="main_help_text">求助\nGet Help</string>
     
-    <string name="location_string">Your Location: %1$s\nYour Destination: %2$s</string>
+    <string name="message_sensor_connected">Sensor is connected 已連接手杖</string>
+    
+    
+    <string-array name="navigation_string">
+        <item>Turn Left. 請轉左</item>
+        <item>Turn right. 請轉右</item>
+        <item>Backward. 請向後轉</item>
+        <item>Go Straight. 請向前行</item>
+        <item>Destination. 你已到達目的地</item>
+        <item>Welcome. 歡迎使用視障定位系統，請將手杖移至附近的點狀地磚。</item>
+        <item>Detecting. 系統正檢測你的方向，請稍候。</item>
+        <item>Invalid. 無效</item>
+        <item>No Command. 無指示</item>
+    </string-array>
     <string name="input_location_prompt">Input your destination</string>
     <string name="btnGo_text">Go</string>
 </resources>
