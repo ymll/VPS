@@ -26,7 +26,7 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 	private String[] navigationString;
 	private Location destination;
 	private TextToSpeech tts;
-	private TagDatabase tagDatabase;
+	private static TagDatabase tagDatabase;
 	private Location previousTag = Location.NONE;
 	private Location currentTag = Location.NONE;
 	
@@ -80,71 +80,20 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 						String tagRaw = response.getDataHexString();
 						String tagId = tagRaw.substring(0, 8);
 						String tagData = tagRaw.substring(8);
-						System.out.printf("Status: %02X, ID: %s, Data: %s\n", response.getStatus(), tagId, tagData);
 						Location loc = tagDatabase.getLocationByTag(tagId);
+						System.out.printf("Status: %02X, ID: %s, Data: %s, Location: %s\n", response.getStatus(), tagId, tagData, loc.name());
 						
-						if(loc != currentTag){
-							previousTag = currentTag; 
-							currentTag = loc;
-							Navigation nav = tagDatabase.getNextAction(previousTag, currentTag, destination);
-
-							if("44E13031".equals(tagId)){
-								Random r = new Random();
-								Location newLoc = null;
-								while(newLoc == tagDatabase.tagToLocation.get("44E13031")){
-									newLoc = Location.values()[r.nextInt(4)];
-								}
-								tagDatabase.tagToLocation.put("44E13031", Location.values()[r.nextInt(4)]);
-							}
-							
-							if(nav == Navigation.ERROR){
-								nav = Navigation.NEW;
-							}
-							
-							String speakText = navigationString[nav.ordinal()];
-							
-							if(nav == Navigation.NEW){
-								int direction = -1;
-								
-								switch (currentTag) {
-								case Left:
-									direction = ((int) ((azimuth + 45 - 90 + 360) / 90)) % 4;
-									break;
-								case Down:
-									direction = ((int) ((azimuth + 45 + 360) / 90)) % 4;
-									break;
-								case Right:
-									direction = ((int) ((azimuth + 45 + 90 + 360) / 90)) % 4;
-									break;
-								case Center:
-									direction = ((int) ((azimuth + 45 + 360) / 90)) % 4;
-									break;
-								case NONE:
-								}
-								
-								int mapping = -1;
-								switch(direction){
-								case 0:
-									mapping = 3;
-									break;
-								case 1:
-									mapping = 0;
-									break;
-								case 2:
-									mapping = 2;
-									break;
-								case 3:
-									mapping = 1;
-									break;
-								}
-								
-								speakText = navigationString[mapping];
-							}
-							
-							String message = String.format("Current: %s, Previous: %s, Des: %s, Next: %s, Angle: %.2f, Speak: %s\n", currentTag.toString(), previousTag.toString(), destination.toString(), nav.toString(), azimuth, speakText);
-							System.out.printf(message);
-							txtMessage.setText(message.replace(", ", "\n"));
-							tts.speak(speakText, TextToSpeech.QUEUE_FLUSH, null);
+						notifyTagUpdate(loc);
+						
+						if("44E13031".equals(tagId)){
+							Random r = new Random();
+							Location newLoc = null;
+							do{
+								newLoc = Location.values()[r.nextInt(4)];
+							}while(newLoc == tagDatabase.tagToLocation.get("44E13031"));
+							tagDatabase.tagToLocation.put("44E13031", newLoc);
+							Location l = tagDatabase.tagToLocation.get("44E13031");
+							System.out.println("New: "+l);
 						}
 					}
 				}
@@ -165,7 +114,7 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 		try{
 			while(sensorConnected){
 				try{
-					Thread.sleep(10);
+					Thread.sleep(50);
 				}catch(InterruptedException e){
 					e.printStackTrace();
 				}
@@ -218,7 +167,7 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 	              double pitch = 180 * orientation[1] / Math.PI;
 	              double roll = 180 * orientation[2] / Math.PI;
 	              
-	              String text = String.format("azimuth=%.4f\npitch=%.4f\nroll=%.4f", azimuth, pitch, roll);
+	              final String text = String.format("azimuth=%.4f\npitch=%.4f\nroll=%.4f", azimuth, pitch, roll);
 	              //if(waitingCompass){
 	            	//  int direction = ((int) ((azimuth+45+360)/90))%4;
 	            	  
@@ -269,8 +218,72 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 	            		  break;
 	            	  }*/
 	             // }
-	              txtAngle.setText(text);
+	              indicate.post(new Runnable(){
+					@Override
+					public void run() {
+						txtAngle.setText(text);						
+					}
+	              });
+	              
 	        }
 	    }
+	}
+	
+	private void notifyTagUpdate(Location loc){
+		if(loc != currentTag){
+			previousTag = currentTag; 
+			currentTag = loc;
+			Navigation nav = tagDatabase.getNextAction(previousTag, currentTag, destination);
+			
+			if(nav == Navigation.ERROR){
+				nav = Navigation.NEW;
+			}
+			
+			String speakText = navigationString[nav.ordinal()];
+			
+			if(nav == Navigation.NEW){
+				int direction = -1;
+				
+				switch (currentTag) {
+				case Left:
+					direction = ((int) ((azimuth + 45 - 90 + 720) / 90)) % 4;
+					break;
+				case Down:
+					direction = ((int) ((azimuth + 45 + 720) / 90)) % 4;
+					break;
+				case Right:
+					direction = ((int) ((azimuth + 45 + 90 + 720) / 90)) % 4;
+					break;
+				case Center:
+					direction = ((int) ((azimuth + 45 + 720) / 90)) % 4;
+					break;
+				case NONE:
+				}
+				
+				int mapping = -1;
+				switch(direction){
+				case 0:
+					mapping = 3;
+					break;
+				case 1:
+					mapping = 0;
+					break;
+				case 2:
+					mapping = 2;
+					break;
+				case 3:
+					mapping = 1;
+					break;
+				}
+				
+				System.out.printf("%s, %f, %d, %d\n", currentTag.toString(), azimuth, direction, mapping);
+				speakText = navigationString[mapping];
+			}
+			
+			String message = String.format("Current: %s, Previous: %s, Des: %s, Next: %s, Angle: %.2f, Speak: %s\n", currentTag.toString(), previousTag.toString(), destination.toString(), nav.toString(), azimuth, speakText);
+			System.out.printf(message);
+			txtMessage.setText(message.replace(", ", "\n"));
+			tts.speak(speakText, TextToSpeech.QUEUE_FLUSH, null);
+		}
 	}
 }

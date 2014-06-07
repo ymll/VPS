@@ -18,6 +18,8 @@ import android.content.IntentFilter;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.speech.tts.TextToSpeech;
 import android.widget.TextView;
 
@@ -30,6 +32,7 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	private BluetoothSocket sensorSocket;	
 	private Location destination = Location.NONE;
 	
+	private InputFormHandler inputFormHandler;
 	private BluetoothTransferThread bluetoothTransferThread;
 	private TextView txtMessage;
 	private TextView txtAngle;
@@ -56,13 +59,14 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 		}
 		
 		super.setContentView(R.layout.activity_nav);
+		inputFormHandler = new InputFormHandler(this);
 		txtMessage = (TextView)super.findViewById(R.id.txtMessage);
 		txtAngle = (TextView)super.findViewById(R.id.txtAngle);
 		
 		navigationString = this.getResources().getStringArray(R.array.navigation_string);
 		assert(navigationString.length == Navigation.values().length);
 		
-		tts = new TextToSpeech(this, new TextToSpeech.OnInitListener(){
+		tts = new TextToSpeech(this.getApplicationContext(), new TextToSpeech.OnInitListener(){
 			@Override
 			public void onInit(int status) {
 				if(status == TextToSpeech.SUCCESS){
@@ -382,12 +386,12 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	public void setDestination(Location destination){
 		if(this.destination != destination && sensorSocket != null){
 			this.destination = destination;
+			if(destination != Location.NONE){
+				tts.speak("Set Destination", TextToSpeech.QUEUE_FLUSH, null);
+				startTransfer();
+			}
 		}else{
 			this.destination = destination;	
-		}
-		
-		if(destination != Location.NONE){
-			startTransfer();
 		}
 	}
 	
@@ -404,8 +408,12 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 		try {
 			bluetoothTransferThread = new BluetoothTransferThread(sensorSocket, navigationString, destination, tts, txtMessage, txtAngle);
 			
-		    mSensorManager.registerListener(bluetoothTransferThread, accelerometer, SensorManager.SENSOR_DELAY_GAME);
-		    mSensorManager.registerListener(bluetoothTransferThread, magnetometer, SensorManager.SENSOR_DELAY_GAME);			
+			HandlerThread mSensorThread = new HandlerThread("sensor_thread");
+			mSensorThread.start();
+			Handler mHandler = new Handler(mSensorThread.getLooper());
+			
+		    mSensorManager.registerListener(bluetoothTransferThread, accelerometer, SensorManager.SENSOR_DELAY_GAME, mHandler);
+		    mSensorManager.registerListener(bluetoothTransferThread, magnetometer, SensorManager.SENSOR_DELAY_GAME, mHandler);
 			
 			bluetoothTransferThread.start();
 		} catch (IOException e) {
