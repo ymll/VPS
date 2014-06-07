@@ -28,6 +28,7 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	private SensorBroadcastReceiver sensorBroadcastReceiver;
 	private BluetoothDevice sensorDevice;
 	private BluetoothSocket sensorSocket;	
+	private Location destination = Location.NONE;
 	
 	private BluetoothTransferThread bluetoothTransferThread;
 	private TextView txtMessage;
@@ -73,6 +74,7 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 		mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
    		accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
    		magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+   		destination = Location.values()[this.getIntent().getIntExtra("destination", Location.NONE.ordinal())];
 	}
 	
 	@Override
@@ -273,26 +275,9 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	public void onSensorConnected() {
 		System.out.println("onSensorConnected");
 		
-		tts.speak(this.getResources().getString(R.string.message_sensor_connected), TextToSpeech.QUEUE_ADD, null);
-		
-		if(bluetoothTransferThread != null && bluetoothTransferThread.isAlive()){
-		    mSensorManager.unregisterListener(bluetoothTransferThread, accelerometer);
-		    mSensorManager.unregisterListener(bluetoothTransferThread, magnetometer);			
-			
-			bluetoothTransferThread.setSensorConnected(false);
-			bluetoothTransferThread.interrupt();
-			bluetoothTransferThread = null;
-		}
-		
-		try {
-			bluetoothTransferThread = new BluetoothTransferThread(sensorSocket, navigationString, Location.values()[this.getIntent().getIntExtra("destination", Location.NONE.ordinal())], tts, txtMessage, txtAngle);
-			
-		    mSensorManager.registerListener(bluetoothTransferThread, accelerometer, SensorManager.SENSOR_DELAY_GAME);
-		    mSensorManager.registerListener(bluetoothTransferThread, magnetometer, SensorManager.SENSOR_DELAY_GAME);			
-			
-			bluetoothTransferThread.start();
-		} catch (IOException e) {
-			e.printStackTrace();
+		tts.speak(this.getResources().getString(R.string.message_sensor_connected), TextToSpeech.QUEUE_FLUSH, null);
+		if(destination != Location.NONE){
+			startTransfer();
 		}
 	}
 
@@ -391,6 +376,40 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 					connectSensor();
 				}
 			}
+		}
+	}
+	
+	public void setDestination(Location destination){
+		if(this.destination != destination && sensorSocket != null){
+			this.destination = destination;
+		}else{
+			this.destination = destination;	
+		}
+		
+		if(destination != Location.NONE){
+			startTransfer();
+		}
+	}
+	
+	private void startTransfer(){
+		if(bluetoothTransferThread != null && bluetoothTransferThread.isAlive()){
+		    mSensorManager.unregisterListener(bluetoothTransferThread, accelerometer);
+		    mSensorManager.unregisterListener(bluetoothTransferThread, magnetometer);			
+			
+			bluetoothTransferThread.setSensorConnected(false);
+			bluetoothTransferThread.interrupt();
+			bluetoothTransferThread = null;
+		}
+		
+		try {
+			bluetoothTransferThread = new BluetoothTransferThread(sensorSocket, navigationString, destination, tts, txtMessage, txtAngle);
+			
+		    mSensorManager.registerListener(bluetoothTransferThread, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+		    mSensorManager.registerListener(bluetoothTransferThread, magnetometer, SensorManager.SENSOR_DELAY_GAME);			
+			
+			bluetoothTransferThread.start();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 }
