@@ -172,6 +172,9 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 				
 				try {
 					recv();
+					while(tts.isSpeaking()){
+						Thread.sleep(50);
+					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
