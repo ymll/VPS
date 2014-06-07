@@ -2,10 +2,11 @@ package hk.edu.cuhk.ymll.vps;
 
 import hk.edu.cuhk.ymll.vps.TagDatabase.Location;
 import hk.edu.cuhk.ymll.vps.TagDatabase.Navigation;
+
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import android.annotation.TargetApi;
+
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -16,7 +17,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.widget.TextView;
@@ -62,12 +62,10 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 		assert(navigationString.length == Navigation.values().length);
 		
 		tts = new TextToSpeech(this, new TextToSpeech.OnInitListener(){
-			@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 			@Override
 			public void onInit(int status) {
 				if(status == TextToSpeech.SUCCESS){
 					setupSensor();
-					txtMessage.setText(tts.getEngines().toString());
 				}
 			}
 		});
