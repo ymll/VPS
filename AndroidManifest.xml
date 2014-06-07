@@ -34,7 +34,8 @@
         </activity>
 
         <activity
-            android:name="hk.edu.cuhk.ymll.vps.RfidSensorActivity">
+            android:name="hk.edu.cuhk.ymll.vps.RfidSensorActivity"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         </activity>
         
         
