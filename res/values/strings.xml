@@ -4,10 +4,10 @@
     <string name="app_name">VPS</string>
 
     <string-array name="locations">
-        <item>Left</item>
-        <item>Down</item>
-        <item>Right</item>
-        <item>Center</item>
+        <item>Airport</item>
+        <item>Central</item>
+        <item>Shatin</item>
+        <item>Mongkok</item>
     </string-array>
     
     <!-- Hardcoded for our own sensor -->
