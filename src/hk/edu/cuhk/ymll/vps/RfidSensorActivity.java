@@ -44,9 +44,12 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	private Sensor magnetometer;
 	
 	private String[] navigationString;
+	private String[] locations;
 	private String sensorAddress;
 	private String sensor_pin;
 	private static final int REQUEST_BLUETOOTH_ENABLE = 43839;
+	
+	private boolean ENABLE_COMPASS = true;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState){
@@ -60,7 +63,6 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 		}
 		
 		super.setContentView(R.layout.activity_nav);
-		inputFormHandler = new InputFormHandler(this);
 		txtMessage = (TextView)super.findViewById(R.id.txtMessage);
 		txtAngle = (TextView)super.findViewById(R.id.txtAngle);
 		
@@ -76,17 +78,22 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 			}
 		});
 		
-		mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
-   		accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-   		magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+		inputFormHandler = new InputFormHandler(this, tts);
+		
+		if(ENABLE_COMPASS){
+			mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+	   		accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+	   		magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);			
+		}
    		destination = Location.values()[this.getIntent().getIntExtra("destination", Location.NONE.ordinal())];
+   		locations = this.getResources().getStringArray(R.array.locations);
 	}
 	
 	@Override
 	protected void onResume(){
 		super.onResume();
 		
-		if(bluetoothTransferThread != null){
+		if(bluetoothTransferThread != null && ENABLE_COMPASS){
 		    mSensorManager.registerListener(bluetoothTransferThread, accelerometer, SensorManager.SENSOR_DELAY_GAME);
 		    mSensorManager.registerListener(bluetoothTransferThread, magnetometer, SensorManager.SENSOR_DELAY_GAME);			
 		}		
@@ -96,7 +103,7 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	protected void onPause() {
 	    super.onPause();
 	    
-		if(bluetoothTransferThread != null){
+		if(bluetoothTransferThread != null && ENABLE_COMPASS){
 		    mSensorManager.unregisterListener(bluetoothTransferThread, accelerometer);
 		    mSensorManager.unregisterListener(bluetoothTransferThread, magnetometer);			
 		}
@@ -136,8 +143,9 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 			disableBluetooth();
 		}
 		
-		if(tts != null)
+		if(tts != null){
 			tts.shutdown();
+		}
 	}
 	
 	
@@ -396,7 +404,7 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 		if(this.destination != destination && sensorSocket != null){
 			this.destination = destination;
 			if(destination != Location.NONE){
-				tts.speak("Set Destination", TextToSpeech.QUEUE_FLUSH, null);
+				tts.speak("Set Destination "+locations[destination.ordinal()]+" Please move to turning tile", TextToSpeech.QUEUE_FLUSH, null);
 				startTransfer();
 			}
 		}else{
@@ -406,8 +414,10 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 	
 	private void startTransfer(){
 		if(bluetoothTransferThread != null && bluetoothTransferThread.isAlive()){
-		    mSensorManager.unregisterListener(bluetoothTransferThread, accelerometer);
-		    mSensorManager.unregisterListener(bluetoothTransferThread, magnetometer);			
+			if(ENABLE_COMPASS){
+			    mSensorManager.unregisterListener(bluetoothTransferThread, accelerometer);
+			    mSensorManager.unregisterListener(bluetoothTransferThread, magnetometer);	
+			}
 			
 			bluetoothTransferThread.setSensorConnected(false);
 			bluetoothTransferThread.interrupt();
@@ -417,12 +427,14 @@ public class RfidSensorActivity extends Activity implements IRfidSensor {
 		try {
 			bluetoothTransferThread = new BluetoothTransferThread(sensorSocket, navigationString, destination, tts, txtMessage, txtAngle, this);
 			
-			HandlerThread mSensorThread = new HandlerThread("sensor_thread");
-			mSensorThread.start();
-			Handler mHandler = new Handler(mSensorThread.getLooper());
-			
-		    mSensorManager.registerListener(bluetoothTransferThread, accelerometer, SensorManager.SENSOR_DELAY_GAME, mHandler);
-		    mSensorManager.registerListener(bluetoothTransferThread, magnetometer, SensorManager.SENSOR_DELAY_GAME, mHandler);
+			if(ENABLE_COMPASS){
+				HandlerThread mSensorThread = new HandlerThread("sensor_thread");
+				mSensorThread.start();
+				Handler mHandler = new Handler(mSensorThread.getLooper());
+
+				mSensorManager.registerListener(bluetoothTransferThread, accelerometer, SensorManager.SENSOR_DELAY_GAME, mHandler);
+			    mSensorManager.registerListener(bluetoothTransferThread, magnetometer, SensorManager.SENSOR_DELAY_GAME, mHandler);				
+			}
 			
 			bluetoothTransferThread.start();
 		} catch (IOException e) {
