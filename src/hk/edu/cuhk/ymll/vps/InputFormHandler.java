@@ -3,6 +3,7 @@ package hk.edu.cuhk.ymll.vps;
 import hk.edu.cuhk.ymll.vps.TagDatabase.Location;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.speech.tts.TextToSpeech;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
 import android.view.View;
@@ -12,7 +13,7 @@ import android.widget.EditText;
 
 public class InputFormHandler {
 		
-	public InputFormHandler(final RfidSensorActivity activity){
+	public InputFormHandler(final RfidSensorActivity activity, final TextToSpeech tts){
 		
 		final EditText inputDes = (EditText)activity.findViewById(R.id.inputDes);
 		Button btnGo = (Button)activity.findViewById(R.id.btnGo);
@@ -23,7 +24,7 @@ public class InputFormHandler {
 			
 			@Override
 			public void onClick(View view) {
-				String inputtedString = inputDes.getText().toString();
+				String inputtedString = inputDes.getText().toString().trim();
 				
 				assert(locations.length-1 == Location.values().length);
 				for(int i=0; i<locations.length; i++){
@@ -53,6 +54,7 @@ public class InputFormHandler {
 							if(lastLocation != Location.NONE){
 								String text = locations[lastLocation.ordinal()];
 								smsManager.sendTextMessage(tel, null, String.format("Help!\nMy current location is %s", text), null, null);
+								tts.speak("Help SMS is sent", TextToSpeech.QUEUE_FLUSH, null);
 							}
 						}
 					}
