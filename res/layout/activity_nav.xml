@@ -6,25 +6,13 @@
     android:orientation="vertical"
     tools:context=".RfidSensorActivity" >
     
-    
-    <TextView
-        android:id="@+id/txtMessage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:importantForAccessibility="no" />
-
 	<TextView
-        android:id="@+id/txtAngle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:importantForAccessibility="no" />
-	
-    <TextView
-        android:id="@+id/lblDes"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:importantForAccessibility="no"
-        android:text="@string/input_location_prompt" />
+	    android:id="@+id/lblDes"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:importantForAccessibility="no"
+	    android:text="@string/input_location_prompt"
+	    android:textSize="28sp" />
 
     <EditText
         android:id="@+id/inputDes"
@@ -49,4 +37,18 @@
         android:layout_height="wrap_content"
         android:text="@string/btnHelp_text" />
 
+    	<TextView
+        android:id="@+id/txtAngle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:importantForAccessibility="no" />
+    
+    
+        <TextView
+        android:id="@+id/txtMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:importantForAccessibility="no" />
+    
+    
 </LinearLayout>
