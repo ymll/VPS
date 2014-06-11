@@ -8,11 +8,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Random;
 
+import android.annotation.TargetApi;
 import android.bluetooth.BluetoothSocket;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Build;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.widget.TextView;
@@ -29,7 +31,7 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 	private static TagDatabase tagDatabase;
 	private Location previousTag = Location.NONE;
 	private Location currentTag = Location.NONE;
-	
+		
 	private TextView txtMessage;
 	private TextView txtAngle;
 	
@@ -42,11 +44,13 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 	public static float[] mAccelerometer = null;
 	public static float[] mGeomagnetic = null;
 	private double azimuth;
+	private int count = 0;
 	
 	private RfidSensorActivity activity;
 	
 	private static int BUFFER_SIZE = 4096;
 
+	@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1)
 	public BluetoothTransferThread(BluetoothSocket sensorSocket, String[] navigationString, Location destination, TextToSpeech tts, TextView txtMessage, TextView txtAngle, RfidSensorActivity activity) throws IOException {
 		this.sensorInputStream = sensorSocket.getInputStream();
 		this.sensorOutputStream = sensorSocket.getOutputStream();
@@ -62,9 +66,7 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 		rfidCommand = new RfidCommand();
 		sensorConnected = true;
 		indicate = new Handler();
-		buf = new byte[BUFFER_SIZE];	
-		
-
+		buf = new byte[BUFFER_SIZE];
 	}
 
 	private void recv() throws IOException, InterruptedException{
@@ -78,31 +80,28 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 		int completeCommandLength = rfidCommand.getCompleteCommandLength(buf, numOfByte);
 		if(completeCommandLength > 0){
 			final RfidCommand.Response response = new RfidCommand.Response(buf, completeCommandLength);
-			indicate.post(new Runnable(){
-				@Override
-				public void run() {
-					if(response.getStatus()==0){
-						String tagRaw = response.getDataHexString();
-						String tagId = tagRaw.substring(0, 8);
-						String tagData = tagRaw.substring(8);
-						Location loc = tagDatabase.getLocationByTag(tagId);
-						System.out.printf("Status: %02X, ID: %s, Data: %s, Location: %s\n", response.getStatus(), tagId, tagData, loc.name());
-						
-						notifyTagUpdate(loc);
-						
-						if("44E13031".equals(tagId)){
-							Random r = new Random();
-							Location newLoc = null;
-							do{
-								newLoc = Location.values()[r.nextInt(4)];
-							}while(newLoc == tagDatabase.tagToLocation.get("44E13031"));
-							tagDatabase.tagToLocation.put("44E13031", newLoc);
-							Location l = tagDatabase.tagToLocation.get("44E13031");
-							System.out.println("New: "+l);
-						}
-					}
+
+			if(response.getStatus()==0){
+				String tagRaw = response.getDataHexString();
+				String tagId = tagRaw.substring(0, 8);
+				String tagData = tagRaw.substring(8);
+				Location loc = tagDatabase.getLocationByTag(tagId);
+				System.out.printf("Status: %02X, ID: %s, Data: %s, Location: %s\n", response.getStatus(), tagId, tagData, loc.name());
+				
+				notifyTagUpdate(loc);
+				
+				if("44E13031".equals(tagId)){
+					Random r = new Random();
+					Location newLoc = null;
+					do{
+						newLoc = Location.values()[r.nextInt(4)];
+					}while(newLoc == tagDatabase.tagToLocation.get("44E13031"));
+					tagDatabase.tagToLocation.put("44E13031", newLoc);
+					Location l = tagDatabase.tagToLocation.get("44E13031");
+					System.out.println("New: "+l);
 				}
-			});
+			}
+			
 			System.arraycopy(buf, completeCommandLength, buf, 0, numOfByte-completeCommandLength);
 			numOfByte -= completeCommandLength;
 		}
@@ -126,10 +125,14 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 				
 				try {
 					recv();
-					while(tts.isSpeaking()){
-						Thread.sleep(50);
-					}
 				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				
+				try{
+					while(tts.isSpeaking())
+						Thread.sleep(1000);
+				}catch(InterruptedException e){
 					e.printStackTrace();
 				}
 				
@@ -223,12 +226,12 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 	            		  break;
 	            	  }*/
 	             // }
-	              indicate.post(new Runnable(){
+	              /*indicate.post(new Runnable(){
 					@Override
 					public void run() {
 						txtAngle.setText(text);						
 					}
-	              });
+	              });*/
 	              
 	        }
 	    }
@@ -285,11 +288,19 @@ public class BluetoothTransferThread extends Thread implements SensorEventListen
 				speakText = navigationString[mapping];
 			}
 			
-			String message = String.format("Current: %s, Previous: %s, Des: %s, Next: %s, Angle: %.2f, Speak: %s\n", currentTag.toString(), previousTag.toString(), destination.toString(), nav.toString(), azimuth, speakText);
+			final String message = String.format("Current: %s, Previous: %s, Des: %s, Next: %s, Angle: %.2f, Speak: %s\n", currentTag.toString(), previousTag.toString(), destination.toString(), nav.toString(), azimuth, speakText);
 			System.out.printf(message);
 			activity.setLastLocation(loc);
-			txtMessage.setText(message.replace(", ", "\n"));
 			tts.speak(speakText, TextToSpeech.QUEUE_FLUSH, null);
+			
+			indicate.post(new Runnable(){
+
+				@Override
+				public void run() {
+					txtMessage.setText(message.replace(", ", "\n"));					
+				}
+				
+			});
 		}
 	}
 }
